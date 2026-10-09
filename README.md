@@ -56,7 +56,6 @@ streamlit run dashboard.py
 
 - 이제 정본 DB는 릴리스(`data`)에 있습니다. 로컬 대시보드에서 최신 기록을 보려면 `gh release download data -p kbo.db.gz --clobber && gunzip -f kbo.db.gz`로 받아오세요(로컬 `kbo.db`를 덮어씁니다).
 - `./publish_db.sh`는 로컬 DB를 릴리스에 강제로 올리는 수동 도구입니다. 클라우드가 더 최신일 수 있으니 쓰기 전에 위 명령으로 먼저 받아오세요.
-- `com.yoonsung.kbo-fetch.plist`, `install_scheduler.sh`는 예전 macOS launchd 방식으로, 데스크탑 폴더 접근 제한 때문에 동작하지 않아 더 이상 쓰지 않습니다.
 
 ## 참고
 
