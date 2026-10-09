@@ -4,7 +4,7 @@
 데이터 원본: kbo.db (fetch_kbo.py가 매일 채워 넣음)
 
 탭 구성: 팀 순위/추이, 팀 기록 비교, 선수 기록, 선수 검색(개인 딥다이브), 세이버메트릭스(근사치),
-과거 세이버메트릭스(연도별), 경기 결과, 역대 기록(1982~), 뉴스, 팀 상세
+과거 세이버메트릭스(연도별), 데이터 분석실(자유 분석), 경기 결과, 역대 기록(1982~), 뉴스, 팀 상세
 """
 
 import sqlite3
@@ -17,6 +17,7 @@ import plotly.express as px
 import streamlit as st
 
 import analysis
+import lab
 import remote_db
 import sabermetrics
 
@@ -104,22 +105,7 @@ def stat_column_config(columns, is_pitching):
         for c in columns if stat_label(c, is_pitching)
     }
 
-def format_innings(value):
-    """계산된 소수 이닝(1/3이닝=0.3333...)을 KBO 표기('1.1'=1이닝+1아웃)로 변환한다.
-
-    parse_innings류 함수들은 '1 1/3이닝'을 1.3333...으로 저장하는데, 이건 계산(ERA·WHIP 등)에는
-    필요하지만 그대로 반올림해서 보여주면(1.3333→'1.3') 야구에 없는 '0.3이닝'처럼 보여 혼동을
-    준다 — 실제로 사용자가 '경기별 기록' 합계에서 '40.3이닝'을 보고 이상하다고 지적해 발견한
-    문제다. 소수부를 아웃 수(0·1·2)로 되돌려 KBO 사이트와 같은 표기로 보여준다.
-    """
-    if value is None or (isinstance(value, float) and np.isnan(value)):
-        return ""
-    whole = int(value)
-    outs = int(round((value - whole) * 3))
-    if outs >= 3:
-        whole += 1
-        outs -= 3
-    return f"{whole}.{outs}"
+format_innings = sabermetrics.format_innings  # 실제 구현은 sabermetrics.py (분석실과 공유)
 
 
 # '시즌별 + 합계' 스타일 표(선수 검색 > 통산 기록·경기별 기록)에서 지표별 소수점 자리수.
@@ -252,7 +238,7 @@ with st.expander("📖 스탯 용어 설명 (약어가 뭘 뜻하는지 헷갈�
     st.caption("표에서는 컬럼 제목에 마우스를 올리면 같은 설명이 툴팁으로 뜹니다.")
 
 TAB_NAMES = ["팀 순위 · 추이", "팀 기록 비교", "종합 분석", "심화 분석", "선수 기록", "선수 검색",
-             "세이버메트릭스", "과거 세이버메트릭스", "경기 결과", "역대 기록", "뉴스", "팀 상세"]
+             "세이버메트릭스", "과거 세이버메트릭스", "데이터 분석실", "경기 결과", "역대 기록", "뉴스", "팀 상세"]
 # st.tabs는 다른 위젯 조작으로 rerun될 때 항상 첫 탭으로 되돌아가는 알려진 문제가 있어,
 # 세션 상태로 선택을 유지하는 segmented_control을 탭처럼 사용한다.
 active_tab = st.segmented_control(
@@ -949,6 +935,10 @@ if active_tab == "과거 세이버메트릭스":
                                        "stat_value": hs_stat, "참고": "참고(오늘날과 비교)"}),
                 hide_index=True, use_container_width=True,
             )
+
+# ============================================================== 데이터 분석실
+if active_tab == "데이터 분석실":
+    lab.render(DB_PATH, BATTING_STAT_LABELS, PITCHING_STAT_LABELS, TEAM_COLORS)
 
 # ============================================================== 경기 결과
 if active_tab == "경기 결과":
