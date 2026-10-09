@@ -17,6 +17,7 @@ import plotly.express as px
 import streamlit as st
 
 import analysis
+import remote_db
 import sabermetrics
 
 DB_PATH = Path(__file__).parent / "kbo.db"
@@ -188,8 +189,21 @@ def last_fetch_date(df, col="fetch_date"):
     return df[col].max() if not df.empty else None
 
 
+@st.cache_resource(ttl=1800, show_spinner="최신 데이터를 내려받는 중... (처음 한 번은 잠시 걸립니다)")
+def sync_remote_db():
+    try:
+        return remote_db.sync_db(DB_PATH)
+    except Exception as e:
+        return f"error: {e}"
+
+
+_sync_status = sync_remote_db()
+if _sync_status == "updated":
+    st.cache_data.clear()
+
 if not DB_PATH.exists():
-    st.error("kbo.db가 없습니다. 먼저 `python fetch_kbo.py`를 실행해 데이터를 수집해 주세요.")
+    st.error("kbo.db가 없습니다. 로컬에서는 먼저 `python fetch_kbo.py`로 데이터를 수집해 주세요."
+             + (f" (배포용 데이터 다운로드 실패: {_sync_status})" if _sync_status.startswith("error") else ""))
     st.stop()
 
 standings = load_table("SELECT * FROM standings")

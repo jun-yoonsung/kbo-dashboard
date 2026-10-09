@@ -42,6 +42,13 @@ streamlit run dashboard.py
 
 `fetch_kbo.py`의 다른 옵션은 파일 상단 docstring과 `python fetch_kbo.py --help`를 참고하세요.
 
+## 웹 배포 (Streamlit Community Cloud)
+
+`kbo.db`는 100MB를 넘어 저장소에 올릴 수 없어서, `publish_db.sh`가 압축(약 23MB)해 GitHub 릴리스(`data`)에 올리고 배포된 앱(`remote_db.py`)이 시작할 때·30분마다 그 파일을 내려받습니다. 로컬 `kbo.db`는 절대 덮어쓰지 않습니다.
+
+1. [share.streamlit.io](https://share.streamlit.io)에서 GitHub로 로그인 → **Create app** → 이 저장소, 브랜치 `main`, 메인 파일 `dashboard.py` 선택 → Deploy
+2. 기록을 갱신한 뒤 웹에도 반영하려면: `python fetch_kbo.py` → `./publish_db.sh`
+
 ## 참고
 
 - `kbo.db`(SQLite)는 저장소에 포함하지 않습니다 — 위 명령으로 직접 생성해야 합니다.
