@@ -1,0 +1,66 @@
+name: 매일 기록 업데이트
+
+# 매일 23:30 KST(= 14:30 UTC)에 KBO 기록을 수집해 배포용 DB(릴리스 data)를 갱신한다.
+# 배포된 대시보드는 30분 안에 새 DB를 내려받는다. 수동 실행도 가능(Actions 탭 → Run workflow).
+on:
+  schedule:
+    - cron: "30 14 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TZ: Asia/Seoul
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 수집에 필요한 패키지 설치
+        run: pip install requests beautifulsoup4
+
+      - name: 릴리스에서 최신 DB 받기
+        run: |
+          gh release download data --pattern kbo.db.gz --dir . --clobber
+          gunzip -f kbo.db.gz
+          ls -la kbo.db
+          sqlite3 kbo.db "SELECT COALESCE(MAX(rowid),0) FROM fetch_log" > start_rowid.txt
+
+      - name: 최근 경기 결과 갱신 (어제·그제 경기 최종 결과 반영)
+        run: python fetch_kbo.py --skip-daily --backfill 4
+
+      - name: 오늘 기록 수집 (순위·팀/선수 기록·박스스코어·세이버메트릭스)
+        run: python fetch_kbo.py
+
+      - name: 수집 결과 점검
+        run: |
+          python - <<'EOF'
+          import sqlite3, sys
+          c = sqlite3.connect("kbo.db")
+          start = int(open("start_rowid.txt").read().strip())
+          errs = c.execute("SELECT step, detail FROM fetch_log WHERE status='error' AND rowid > ?", (start,)).fetchall()
+          latest = c.execute("SELECT MAX(fetch_date) FROM standings").fetchone()[0]
+          print("최근 순위 기준일:", latest, "/ 에러", len(errs), "건")
+          for e in errs[:10]:
+              print(" ", e)
+          if len(errs) > 5:
+              sys.exit("에러가 너무 많아 DB를 올리지 않습니다")
+          EOF
+
+      - name: 갱신된 DB를 릴리스에 올리기
+        run: |
+          sqlite3 kbo.db ".backup 'snapshot.db'"
+          gzip -9 -c snapshot.db > kbo.db.gz
+          gh release upload data kbo.db.gz --clobber
