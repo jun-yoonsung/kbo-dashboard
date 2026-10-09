@@ -49,7 +49,14 @@ streamlit run dashboard.py
 `kbo.db`는 100MB를 넘어 저장소에 올릴 수 없어서, `publish_db.sh`가 압축(약 23MB)해 GitHub 릴리스(`data`)에 올리고 배포된 앱(`remote_db.py`)이 시작할 때·30분마다 그 파일을 내려받습니다. 로컬 `kbo.db`는 절대 덮어쓰지 않습니다.
 
 1. [share.streamlit.io](https://share.streamlit.io)에서 GitHub로 로그인 → **Create app** → 이 저장소, 브랜치 `main`, 메인 파일 `dashboard.py` 선택 → Deploy
-2. 기록을 갱신한 뒤 웹에도 반영하려면: `python fetch_kbo.py` → `./publish_db.sh`
+
+## 매일 자동 업데이트
+
+`.github/workflows/daily-update.yml`(GitHub Actions)이 **매일 23:30 KST**에 릴리스의 DB를 받아 최근 4일치 경기 결과를 다시 확인하고 `fetch_kbo.py`로 순위·팀/선수 기록·박스스코어·세이버메트릭스를 갱신한 뒤, DB를 릴리스에 다시 올립니다. 배포된 앱은 30분 안에 새 DB를 받아갑니다(내 컴퓨터가 꺼져 있어도 동작, 소요 약 9분). Actions 탭 → *매일 기록 업데이트* → **Run workflow**로 수동 실행도 됩니다. 실패하면 GitHub가 이메일로 알려줍니다.
+
+- 이제 정본 DB는 릴리스(`data`)에 있습니다. 로컬 대시보드에서 최신 기록을 보려면 `gh release download data -p kbo.db.gz --clobber && gunzip -f kbo.db.gz`로 받아오세요(로컬 `kbo.db`를 덮어씁니다).
+- `./publish_db.sh`는 로컬 DB를 릴리스에 강제로 올리는 수동 도구입니다. 클라우드가 더 최신일 수 있으니 쓰기 전에 위 명령으로 먼저 받아오세요.
+- `com.yoonsung.kbo-fetch.plist`, `install_scheduler.sh`는 예전 macOS launchd 방식으로, 데스크탑 폴더 접근 제한 때문에 동작하지 않아 더 이상 쓰지 않습니다.
 
 ## 참고
 
