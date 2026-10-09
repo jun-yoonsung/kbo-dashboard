@@ -20,6 +20,7 @@ import analysis
 import lab
 import remote_db
 import sabermetrics
+from innings import format_innings
 
 DB_PATH = Path(__file__).parent / "kbo.db"
 
@@ -104,9 +105,6 @@ def stat_column_config(columns, is_pitching):
         c: st.column_config.Column(help=f"{stat_label(c, is_pitching)}")
         for c in columns if stat_label(c, is_pitching)
     }
-
-format_innings = sabermetrics.format_innings  # 실제 구현은 sabermetrics.py (분석실과 공유)
-
 
 # '시즌별 + 합계' 스타일 표(선수 검색 > 통산 기록·경기별 기록)에서 지표별 소수점 자리수.
 RATE3_COLS = {"AVG", "OBP", "SLG", "OPS", "WPCT"}

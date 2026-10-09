@@ -16,6 +16,7 @@ import streamlit as st
 
 import analysis
 import sabermetrics
+from innings import format_innings
 
 TOOLS = ["산점도", "분포", "상관관계", "시대별 추이", "선수 비교", "투수 등판 분석", "팀 매치업"]
 
@@ -608,7 +609,7 @@ def tool_pitching(db_path, mtime):
         g["BB/9"] = g["BB"] * 9 / g["IP"]
         g["이닝/선발"] = g["IP"] / g["선발"]
         g["QS%"] = g["QS"] / g["선발"] * 100
-        g["이닝"] = g["IP"].map(sabermetrics.format_innings)
+        g["이닝"] = g["IP"].map(format_innings)
         cols = ["player", "team", "선발", "이닝", "이닝/선발", "ERA", "WHIP", "K/9", "BB/9", "QS", "QS%",
                 "평균투구수", "최다투구수", "평균게임스코어", "평균휴식일"]
         out = _round_df(g.sort_values("평균게임스코어", ascending=False)[cols].rename(columns={"player": "선수", "team": "팀"}))
@@ -660,7 +661,7 @@ def tool_pitching(db_path, mtime):
                                               연투=("휴식일", lambda x: int((x == 0).sum())),
                                               마지막=("date", "max")).reset_index()
         g["마지막 등판"] = (end - g["마지막"]).dt.days.map(lambda d: "오늘/마지막 경기일" if d == 0 else f"{d}일 전")
-        g["이닝"] = g["IP"].map(sabermetrics.format_innings)
+        g["이닝"] = g["IP"].map(format_innings)
         g = g.sort_values(["투구수", "등판"], ascending=False)
         top = g.head(15)
         fig = px.bar(top[::-1], x="투구수", y="player", color="team", orientation="h", text="등판", hover_data=["이닝", "연투"])
